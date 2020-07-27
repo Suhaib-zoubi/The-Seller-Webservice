@@ -132,5 +132,190 @@ namespace The_Seller
 
             HttpContext.Current.Response.Write(ser.Serialize(jsonData));
         }
+
+
+        [WebMethod(MessageName = "UploadImage", Description = "This method Upload Image")]
+        [System.Xml.Serialization.XmlInclude(typeof(ImageResult))]
+        public ImageResult UploadImage(String image, String TempToolID)
+        {
+            ImageResult result = new ImageResult();
+            result.PicPath = "error";
+
+            //upload image
+            Image convertedImage = Base64ToImage(image);
+            
+            if (convertedImage != null)
+            {
+                Random ran = new Random();
+                String rand = Convert.ToString(ran.Next(7000000) + 5000);
+                result.PicPath = TempToolID + "H" + StringGeneration.getString() + ".jpg";
+
+                try
+                {
+                    //save image in server
+                    convertedImage.Save(Server.MapPath("/Images/" + result.PicPath), System.Drawing.Imaging.ImageFormat.Jpeg);
+   
+                    //save image info
+                    try
+                    {
+                        using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                        {
+                            SqlCommand cmd = new SqlCommand("INSERT INTO Pictures (ToolID, PicPath)" +
+                           " VALUES (@TempToolID, @PicPath)");
+                            cmd.CommandType = CommandType.Text;
+                            cmd.Connection = connection;
+                            cmd.Parameters.AddWithValue("@TempToolID", TempToolID);
+                            cmd.Parameters.AddWithValue("@PicPath", result.PicPath);
+                            connection.Open();
+                            cmd.ExecuteNonQuery();
+                            connection.Close();
+                        }
+                        result.IsAdded = 1;
+                    }
+                    catch (Exception ex)
+                    {
+                        result.PicPath = ex.Message;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.PicPath = ex.Message;
+                } // if there is data
+
+            }
+            return result;
+        }
+
+        public Image Base64ToImage(string base64String)
+        {
+            try
+            {
+                //convert Base64 sString to byte[]
+                byte[] imageBytes = Convert.FromBase64String(base64String);
+                using (var ms = new MemoryStream(imageBytes, 0, imageBytes.Length))
+                {
+                    // convert byte[] to Image
+                    ms.Write(imageBytes, 0, imageBytes.Length);
+                    Image image = Image.FromStream(ms, true);
+                    return image;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json, UseHttpGet = true)]
+        [System.ComponentModel.ToolboxItem(false)]
+        public void AddTools(string UserID, string ToolName, string ToolDes, string ToolPrice
+        , string ToolTypeID, string TempToolID) //get list of note
+        {
+            // intilize the data user
+            JavaScriptSerializer ser = new JavaScriptSerializer();
+            int IsAdded = 1;
+            string Message = "";
+            DateTime DateAdded = DateTime.Now;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand("INSERT INTO Tools (ToolName, ToolDes, ToolPrice, ToolTypeID, UserID, DateAdd)" +
+                        " VALUES (@ToolName, @ToolDes, @ToolPrice, @ToolTypeID, @UserID, @DateAdd)");
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@ToolName", ToolName);
+                    cmd.Parameters.AddWithValue("@ToolDes", ToolDes);
+                    cmd.Parameters.AddWithValue("@ToolPrice", ToolPrice);
+                    cmd.Parameters.AddWithValue("@ToolTypeID", ToolTypeID);
+                    cmd.Parameters.AddWithValue("@UserID", UserID);
+                    cmd.Parameters.AddWithValue("@DateAdd", DateAdded);
+
+                    connection.Open();
+                    cmd.ExecuteNonQuery();
+                    connection.Close();
+                }
+          
+                //uploade the temp image id with this tool id
+                Tools myUser = new Tools();
+                String ToolID = myUser.GetLastToolAdded(UserID, DateAdded);
+
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand("UPDATE pictures set ToolID=@ToolID where ToolID=@TempToolID");
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@ToolID", ToolID);
+                    cmd.Parameters.AddWithValue("@TempToolID", TempToolID);
+                    connection.Open();
+                    cmd.ExecuteNonQuery();
+                    connection.Close();
+                }
+
+                Message = "Tool is Added";
+            }
+            catch (Exception ex)
+            {
+                IsAdded = 0;
+                Message = ex.Message; // "Cannot add yor information"
+            }
+
+            var jsonData = new
+            {
+                IsAdded = IsAdded,
+                Message = Message
+            };
+
+            HttpContext.Current.Response.Write(ser.Serialize(jsonData));
+        }
+
+
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json, UseHttpGet = true)]
+        [System.ComponentModel.ToolboxItem(false)]
+        public void GetToolType() //get list of note
+        {
+            // intilize the data user
+            JavaScriptSerializer ser = new JavaScriptSerializer();
+            ToolType[] ToolData = null;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    connection.Open();
+                    SqlDataAdapter adpt = new SqlDataAdapter("SELECT * FROM ToolType", connection);
+                    DataTable dataTable = new DataTable();
+                    adpt.Fill(dataTable);
+
+                    ToolData = new ToolType[dataTable.Rows.Count];
+                    int Count = 0;
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        ToolData[Count] = new ToolType();
+                        ToolData[Count].ToolTypeID = Convert.ToInt32(dataTable.Rows[i]["ToolTypeID"]);
+                        ToolData[Count].ToolTypeName = Convert.ToString(dataTable.Rows[i]["ToolTypeName"]);
+                        Count++;
+                    }
+                    dataTable.Clear();
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
+            var jsonData = new
+            {
+                ToolData = ToolData
+            };
+
+            HttpContext.Current.Response.Write(ser.Serialize(jsonData));
+        }
     }
 }
