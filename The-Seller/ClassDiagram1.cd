@@ -42,5 +42,12 @@
       <FileName>ToolType.cs</FileName>
     </TypeIdentifier>
   </Class>
+  <Class Name="The_Seller.ToolListing">
+    <Position X="0.5" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAEAAAgAAAAAAAAgAAAAAAAAAAAAAAAAEQAAA=</HashCode>
+      <FileName>ToolListing.cs</FileName>
+    </TypeIdentifier>
+  </Class>
   <Font Name="Segoe UI" Size="9" />
 </ClassDiagram>

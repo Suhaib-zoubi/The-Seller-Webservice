@@ -78,6 +78,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Classes\Users.cs" />
     <Compile Include="Classes\StringGeneration.cs" />
+    <Compile Include="ToolListing.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="ToolType.cs" />
     <Compile Include="UsersWS.asmx.cs">

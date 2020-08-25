@@ -317,5 +317,78 @@ namespace The_Seller
 
             HttpContext.Current.Response.Write(ser.Serialize(jsonData));
         }
+
+
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json, UseHttpGet = true)]
+        [System.ComponentModel.ToolboxItem(false)]
+        public void GetToolListing(string UserID, string Distance, string From, string to
+        , string ToolTypeID, string ToolID, string q) //get list of note
+        {
+            if (q.Equals("@")) q = "%"; // android canot call link with %
+            else q = "%" + q + "%";
+
+            // inistailze the data Users
+            JavaScriptSerializer ser = new JavaScriptSerializer();
+
+            ToolListing[] ToolData = null;
+            int HasTool = 0;
+            string message = "ok";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandText = "ToolListing";
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@UserID", UserID);
+                    cmd.Parameters.AddWithValue("@Distance", Distance);
+                    cmd.Parameters.AddWithValue("@From", From);
+                    cmd.Parameters.AddWithValue("@to", to);
+                    cmd.Parameters.AddWithValue("@ToolTypeID", ToolTypeID);
+                    cmd.Parameters.AddWithValue("@ToolID", ToolID);
+                    cmd.Parameters.AddWithValue("@q", q);
+                    connection.Open();
+                    SqlDataAdapter adpt = new SqlDataAdapter(cmd);
+                    DataTable dataTable = new DataTable();
+                    adpt.Fill(dataTable);
+
+                    ToolData = new ToolListing[dataTable.Rows.Count];
+
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        ToolData[i] = new ToolListing();
+                        ToolData[i].ToolID = Convert.ToString(dataTable.Rows[i]["ToolID"]);
+                        ToolData[i].ToolName = Convert.ToString(dataTable.Rows[i]["ToolName"]);
+                        ToolData[i].ToolDes = Convert.ToString(dataTable.Rows[i]["ToolDes"]);
+                        ToolData[i].ToolPrice = Convert.ToString(dataTable.Rows[i]["ToolPrice"]);
+                        ToolData[i].DateAdd = Convert.ToString(dataTable.Rows[i]["DateAdd"]);
+                        ToolData[i].PictureLink = Convert.ToString(dataTable.Rows[i]["PictureLink"]);
+                    }
+                    if (dataTable.Rows.Count > 0)
+                        HasTool = 1;
+                    dataTable.Clear();
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                HasTool = 0;
+                message = ex.Message;
+            }
+            var jsonData = new
+            {
+                ToolData = ToolData,
+                HasTool = HasTool,
+                message = message
+            };
+
+            HttpContext.Current.Response.Write(ser.Serialize(jsonData));
+
+        }
+
     }
 }
