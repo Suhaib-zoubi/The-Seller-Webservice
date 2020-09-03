@@ -495,7 +495,7 @@ namespace The_Seller
         [ScriptMethod(ResponseFormat = ResponseFormat.Json, UseHttpGet = true)]
         [System.ComponentModel.ToolboxItem(false)]
         public void UpdateTool(string ToolID, string ToolName, string ToolDes, string ToolPrice
-        , string ToolTypeID) //get list of note
+        , string ToolTypeID, string PicPath) //get list of note
         {
             // intilize the data user
             JavaScriptSerializer ser = new JavaScriptSerializer();
@@ -505,7 +505,8 @@ namespace The_Seller
             {
                 using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
                 {
-                    SqlCommand cmd = new SqlCommand("UPDATE Tools SET ToolName=@ToolName, ToolDes=@ToolDes, ToolPrice=@ToolPrice, ToolTypeID=@ToolTypeID" +
+                    SqlCommand cmd = new SqlCommand("UPDATE Tools SET ToolName=@ToolName, ToolDes=@ToolDes, " +
+                        "ToolPrice=@ToolPrice, ToolTypeID=@ToolTypeID" +
                         " WHERE ToolID=@ToolID");
                     cmd.CommandType = CommandType.Text;
                     cmd.Connection = connection;
@@ -519,6 +520,40 @@ namespace The_Seller
                     cmd.ExecuteNonQuery();
                     connection.Close();
                 }
+                GetPicture getPicture = new GetPicture();
+                if (getPicture.isToolPicture(ToolID))
+                {
+                    using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                    {
+                        SqlCommand cmd = new SqlCommand("UPDATE Pictures SET PicPath=@PicPath" +
+                            " WHERE ToolID=@ToolID");
+                        cmd.CommandType = CommandType.Text;
+                        cmd.Connection = connection;
+                        cmd.Parameters.AddWithValue("@PicPath", PicPath);
+                        cmd.Parameters.AddWithValue("@ToolID", ToolID);
+
+                        connection.Open();
+                        cmd.ExecuteNonQuery();
+                        connection.Close();
+                    }
+                }
+                else
+                {
+                    using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                    {
+                        SqlCommand cmd = new SqlCommand("INSERT INTO Pictures (ToolID, PicPath)" +
+                            " VALUES (@ToolID, @PicPath)");
+                        cmd.CommandType = CommandType.Text;
+                        cmd.Connection = connection;
+                        cmd.Parameters.AddWithValue("@PicPath", PicPath);
+                        cmd.Parameters.AddWithValue("@ToolID", ToolID);
+
+                        connection.Open();
+                        cmd.ExecuteNonQuery();
+                        connection.Close();
+                    }
+                }
+                
 
 
                 Message = "Tool is Update";
@@ -532,6 +567,61 @@ namespace The_Seller
             var jsonData = new
             {
                 IsUpdate = IsUpdate,
+                Message = Message
+            };
+
+            HttpContext.Current.Response.Write(ser.Serialize(jsonData));
+        }
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json, UseHttpGet = true)]
+        [System.ComponentModel.ToolboxItem(false)]
+        public void DeleteTool(string ToolID) //get list of note
+        {
+            // intilize the data user
+            JavaScriptSerializer ser = new JavaScriptSerializer();
+            int IsDelete = 1;
+            string Message = "";
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Tools"+
+                        " WHERE ToolID=@ToolID");
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@ToolID", ToolID);
+
+                    connection.Open();
+                    cmd.ExecuteNonQuery();
+                    connection.Close();
+                }
+
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Pictures" +
+                        " WHERE ToolID=@ToolID");
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@ToolID", ToolID);
+
+                    connection.Open();
+                    cmd.ExecuteNonQuery();
+                    connection.Close();
+                }
+
+
+                Message = "Tool is Delete";
+            }
+            catch (Exception ex)
+            {
+                IsDelete = 0;
+                Message = ex.Message; // "Cannot add yor information"
+            }
+
+            var jsonData = new
+            {
+                IsDelete = IsDelete,
                 Message = Message
             };
 

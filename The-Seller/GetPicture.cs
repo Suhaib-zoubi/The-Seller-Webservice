@@ -40,5 +40,34 @@ namespace The_Seller
             return PicPath;
         }
 
+        public bool isToolPicture(string ToolID)
+        {
+            bool isFound = false;
+            try
+            {
+                SqlDataReader reader;
+                using (SqlConnection connection = new SqlConnection(DBConnection.ConnectionString()))
+                {
+                    SqlCommand cmd = new SqlCommand("SELECT PicPath FROM Pictures WHERE ToolID=@ToolID");
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Connection = connection;
+                    cmd.Parameters.AddWithValue("@ToolID", ToolID);
+                    connection.Open();
+
+                    reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        isFound = true;
+                    }
+                    reader.Close();
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return isFound;
+        }
+
     }
 }
